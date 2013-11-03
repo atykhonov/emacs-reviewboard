@@ -1,0 +1,11 @@
+* TODO replace direct epc calls to deffered calls
+
+; Example:
+; (defun test()
+;  (deferred:$
+;    (epc:call-deferred my-epc 'outgoing_requests)
+;    (deferred:nextc it
+;      (lambda (x) (message "Return : %s" x))))
+;  )
+
+* TODO take care about (read-only-mode)
