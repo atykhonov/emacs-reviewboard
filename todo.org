@@ -9,3 +9,6 @@
 ;  )
 
 * TODO take care about (read-only-mode)
+* TODO *RB-Diff* mode! There is python code. But syntax highlighting is provided by diff. Is it possible to have python syntax highlighting there? How?
+* TODO so, now dates in reviewboard.py converts by means of dateutil.parser.parse. /How/ to avoid this dependency?
+* TODO

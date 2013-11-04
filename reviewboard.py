@@ -1,6 +1,7 @@
 from rbtools.api.client import RBClient
 import pdb
 import os
+import dateutil.parser
 
 
 username = os.getenv('USER')
@@ -67,7 +68,7 @@ def collect_requests(requests):
         submitter = request.get_submitter()
         row.append(submitter.username)
         time_added = fields['time_added']
-        row.append(time_added)
+        row.append(date_to_str(time_added))
         row.append(fields['status'])
         result.append(row)
     return result
@@ -97,7 +98,13 @@ def review(*id):
     result.append(review_request['description'])
     result.append(review_request['testing_done'])
 
+    result.append(date_to_str(review_request['time_added']))
+
     return result
+
+def date_to_str(date):
+    datetime = dateutil.parser.parse(date)
+    return datetime.strftime('%b. %d, %Y')
 
 @server.register_function
 def get_files(*id):
