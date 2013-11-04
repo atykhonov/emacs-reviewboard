@@ -1,8 +1,8 @@
 (require 'epc)
 
-(defvar rb-epc (epc:start-epc "python" '("rb-server.py")))
+(defvar rb-epc (epc:start-epc "python" '("reviewboard.py")))
 (defvar diff-comments "")
-(defvar review-id 0)
+(defvar rb-review-id 0)
 
 
 (define-derived-mode reviewboard-mode tabulated-list-mode "ReviewBoard"
@@ -19,14 +19,30 @@
 
 (defun reviewboard-outgoing ()
   (interactive)
-  (pop-to-buffer "*ReviewBoard*" nil)
+  (pop-to-buffer "*RB-Outgoing*" nil)
+  (reviewboard-requests "outgoing")
+)
+
+(defun reviewboard-incomming ()
+  (interactive)
+  (pop-to-buffer "*RB-Incomming*" nil)
+  (reviewboard-requests "incomming")
+)
+
+(defun reviewboard-requests (type)
   (reviewboard-mode)
   (setq rows (list))
   (setq tabulated-list-entries nil)
   (add-to-list 'tabulated-list-entries rows)
   (setq i 0)
-; (message "Return : %S" (epc:call-sync my-epc 'echo '(10 40)))
-  (dolist (info (epc:call-sync rb-epc 'outgoing_requests '()))
+  (setq requests (list))
+  (when (equal type "outgoing")
+    (setq requests (epc:call-sync rb-epc 'outgoing_requests '()))
+  )
+  (when (equal type "incomming")
+    (setq requests (epc:call-sync rb-epc 'incomming_requests '()))
+  )
+  (dolist (info requests)
       (progn
         (setq review-id (int-to-string (nth 0 info)))
         (setq summary (nth 1 info))
@@ -108,8 +124,6 @@
   (let
     (
      (filename (button-label button))
-     (review-id (button-get 'review-id))
-     (review-id (get-text-property button 'review-id))
      (buffer-name "*RB-Diff*")
     )
     (pop-to-buffer buffer-name nil)
@@ -118,8 +132,8 @@
       (erase-buffer)
       (let
         (
-          (data (epc:call-sync rb-epc 'get_diff `(12 ,filename)))
-          (comments (epc:call-sync rb-epc 'get_comments `(12 ,filename)))
+          (data (epc:call-sync rb-epc 'get_diff `(,rb-review-id ,filename)))
+          (comments (epc:call-sync rb-epc 'get_comments `(,rb-review-id ,filename)))
         )
         (setq diff-comments comments)
         (add-to-list 'post-command-hook 'popup-comment)
@@ -170,7 +184,8 @@
                (id (nth 0 file))
                (name (nth 1 file))
               )
-              (insert-text-button name 'action 'reviewboard-diff 'review-id review-id)
+              (setq rb-review-id review-id)
+              (insert-text-button name 'action 'reviewboard-diff)
               (insert "\n")
             )
           )
@@ -179,15 +194,3 @@
     )
   )
 )
-
-; TODO replace direct epc calls to deffered calls
-
-; Example:
-; (defun test()
-;  (deferred:$
-;    (epc:call-deferred my-epc 'outgoing_requests)
-;    (deferred:nextc it
-;      (lambda (x) (message "Return : %s" x))))
-;  )
-
-; TODO take care about (read-only-mode)

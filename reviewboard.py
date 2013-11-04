@@ -1,11 +1,16 @@
 from rbtools.api.client import RBClient
 import pdb
+import os
 
 
-log_file = open('/str/development/projects/open-source/reviewboard-emacs/lab/debug.log', 'a+')
+username = os.getenv('USER')
+
+
+log_file = open('/str/development/projects/open-source/emacs-reviewboard/debug.log', 'a+')
 
 
 client = RBClient('http://localhost:8000/')
+# client = RBClient('http://reviewboard.sgg.cisco.com/')
 root = client.get_root()
 
 def test():
@@ -37,8 +42,21 @@ server = EPCServer(('localhost', 0))
 
 @server.register_function
 def outgoing_requests():
+    return collect_requests(
+        root.get_review_requests(
+            from_user=username))
+
+
+@server.register_function
+def incomming_requests():
+    return collect_requests(
+        root.get_review_requests(
+            to_users=username))
+
+
+def collect_requests(requests):
     result = []
-    for request in root.get_review_requests():
+    for request in requests:
         row = []
         fields = request.fields
         row.append(fields['id'])
