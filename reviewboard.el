@@ -76,32 +76,17 @@
 )
 
 (defun append-comments (curline)
-  (setq result " ")
   (let*
     (
-     (offset 6)
+     (offset 6) ; skip diff head lines
      (curline (- curline offset))
      (comments (assoc-default curline diff-comments))
     )
-    (when comments
-      (progn
-        (let ((comment (nth 0 comments)))
-          (save-excursion
-            (goto-line (+ curline offset))
-            (let ((bol (point-at-bol)) (eol (point-at-eol)))
-              ; (put-text-property bol eol 'point-entered 'popup-comment)
-              (put-text-property bol eol 'help-echo comment)
-              ; (set-text-properties bol eol '(point-entered popup-comment))
-              ; (put-text-property bol eol 'comment-hint comment)
-              ; (put-text-property bol eol 'face 'annot-highlighter-face)
-            )
-          )
-        )
-        (setq result "C")
-      )
+    (if comments
+      "C"
+      " "
     )
   )
-  result
 )
 ; apropos point motion
 
@@ -114,7 +99,7 @@
      (comments (assoc-default curline diff-comments))
     )
     (when comments
-      (message (nth 0 comments))
+      (message "%s:\n%s" (nth 1 comments) (nth 0 comments))
     )
   )
 )
@@ -126,7 +111,7 @@
      (filename (button-label button))
      (buffer-name "*RB-Diff*")
     )
-    (pop-to-buffer buffer-name nil)
+    (switch-to-buffer buffer-name)
     (diff-mode)
     (with-current-buffer buffer-name
       (erase-buffer)
@@ -137,7 +122,6 @@
         )
         (setq diff-comments comments)
         (add-to-list 'post-command-hook 'popup-comment)
-        (print comments)
         (setq linum-format 'append-comments)
         (linum-mode)
         (insert data)
@@ -166,7 +150,7 @@
         (testing-done (nth 6 details))
         (time-added (nth 7 details))
       )
-      (pop-to-buffer buffer-name nil)
+      (switch-to-buffer buffer-name)
       (with-current-buffer buffer-name
         (erase-buffer)
         (let ((head (format "Review Request #%s - Created %s and updated %s\n" review-id time-added time-added)))

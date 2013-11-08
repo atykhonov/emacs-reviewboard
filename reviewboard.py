@@ -20,16 +20,17 @@ def test():
     review_request = root.get_review_request(review_request_id=12)
     for file in review_request.get_diff_context().files:
         if filename == file['dest_filename']:
-            comment = []
             for ccdata in file['comment_counts']:
                 for cdata in ccdata['comments']:
+                    comment = []
+                    import pdb
+                    pdb.set_trace()
                     comment.append(cdata['line'])
                     comment.append(cdata['text'])
-            result.append(comment)
+                    result.append(comment)
     return result
 
 # print test()
-# pdb.set_trace()
 # requests = root.get_review_requests()
 # print requests
 # pdb.set_trace()
@@ -140,6 +141,7 @@ def get_comments(*data):
                     comment = []
                     comment.append(cdata['line'])
                     comment.append(cdata['text'])
+                    comment.append(cdata['user']['name'])
                     result.append(comment)
     return result
 
