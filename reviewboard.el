@@ -1,8 +1,14 @@
 (require 'epc)
+(require 'widget)
 
 (defvar rb-epc (epc:start-epc "python" '("reviewboard.py")))
 (defvar diff-comments "")
 (defvar rb-review-id 0)
+(defvar summary-widget nil)
+(defvar description-widget nil)
+(defvar testing-done-widget nil)
+(defvar outgoing-list-type "outgoing")
+(defvar incomming-list-type "incomming")
 
 
 (define-derived-mode reviewboard-mode tabulated-list-mode "ReviewBoard"
@@ -20,13 +26,13 @@
 (defun reviewboard-outgoing ()
   (interactive)
   (pop-to-buffer "*RB-Outgoing*" nil)
-  (reviewboard-requests "outgoing")
+  (reviewboard-requests outgoing-list-type)
 )
 
 (defun reviewboard-incomming ()
   (interactive)
   (pop-to-buffer "*RB-Incomming*" nil)
-  (reviewboard-requests "incomming")
+  (reviewboard-requests incomming-list-type)
 )
 
 (defun reviewboard-requests (type)
@@ -36,10 +42,10 @@
   (add-to-list 'tabulated-list-entries rows)
   (setq i 0)
   (setq requests (list))
-  (when (equal type "outgoing")
+  (when (equal type outgoing-list-type)
     (setq requests (epc:call-sync rb-epc 'outgoing_requests '()))
   )
-  (when (equal type "incomming")
+  (when (equal type incomming-list-type)
     (setq requests (epc:call-sync rb-epc 'incomming_requests '()))
   )
   (dolist (info requests)
@@ -50,7 +56,9 @@
         (setq time-added (nth 3 info))
         (setq status (nth 4 info))
         (setq rows (list i
-                         (vector (list review-id 'action 'reviewboard-request)
+                         (vector (list review-id
+                                       'action 'reviewboard-request
+                                       'list-type type)
                                  summary
                                  submitter
                                  time-added
@@ -138,6 +146,7 @@
     (
       (details (epc:call-sync rb-epc 'review `(,review-id)))
       (buffer-name "*RB-Request*")
+      (list-type (button-get button 'list-type))
     )
     (let
       (
@@ -153,16 +162,41 @@
       (switch-to-buffer buffer-name)
       (with-current-buffer buffer-name
         (erase-buffer)
-        (let ((head (format "Review Request #%s - Created %s and updated %s\n" review-id time-added time-added)))
+        (let* ((head (format "Review Request #%s - Created %s and updated %s\n"
+                            review-id time-added time-added))
+               (head-width (string-width head)))
           (insert head)
-          (insert (make-string (string-width head) ?-))
-          (insert (format "\n     Summary: %s\n" summary))
-          (insert (format "      Branch: %s\n" branch))
+          (insert (make-string head-width ?-))
+          (insert "\n")
+          (if (equal list-type outgoing-list-type)
+            (setq summary-widget (widget-create 'editable-field
+                                                :size (- head-width 14)
+                                                :format "     Summary: %v "
+                                                summary))
+            (insert (format "     Summary: %s" summary)))
+          (widget-insert "\n")
+          (widget-insert (format "      Branch: %s\n" branch))
           (insert (format "      People: %s\n" (mapconcat (lambda (x) x) target_people ", ")))
           (insert (format "      Groups: %s\n" (mapconcat (lambda (x) x) target_groups ", ")))
           (insert (format "  Repository: %s\n" repository))
-          (insert (format " Description: %s\n" description))
-          (insert (format "Testing Done: %s\n" testing-done))
+          (if (equal list-type outgoing-list-type)
+            (progn
+              (setq description-widget (widget-create 'editable-field
+                                                      :size (- head-width 14)
+                                                      :format " Description: %v "
+                                                      description))
+              (widget-insert "\n")
+              (setq testing-done-widget (widget-create 'editable-field
+                                                       :size (- head-width 14)
+                                                       :format "Testing Done: %v "
+                                                       testing-done))
+              (widget-insert "\n")
+            )
+            (progn
+              (insert (format " Description: %s\n" description))
+              (insert (format "Testing Done: %s\n" testing-done))
+            )
+          )
           (insert (make-string (string-width head) ?-))
           (insert "\n\nFiles:\n\n")
         )
@@ -182,6 +216,7 @@
           )
         )
         (goto-char (point-min))
+        (widget-setup)
       )
     )
   )
